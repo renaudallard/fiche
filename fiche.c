@@ -34,6 +34,7 @@ $ cat fiche.c | nc localhost 9999
 #include <string.h>
 
 #include <pwd.h>
+#include <grp.h>
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -423,12 +424,19 @@ static int perform_user_change(const Fiche_Settings *settings) {
         return -1;
     }
 
+    if (initgroups(settings->user_name, gid) != 0) {
+        print_error("Couldn't init groups for requested user: %s!", settings->user_name);
+        return -1;
+    }
+
     if (setgid(gid) != 0) {
         print_error("Couldn't switch to requested user: %s!", settings->user_name);
+        return -1;
     }
 
     if (setuid(uid) != 0) {
         print_error("Couldn't switch to requested user: %s!", settings->user_name);
+        return -1;
     }
 
     print_status("User changed to: %s.", settings->user_name);
