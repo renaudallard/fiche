@@ -455,7 +455,14 @@ static int start_server(Fiche_Settings *settings) {
     // Prepare address and port handler
     struct sockaddr_in address;
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr(settings->listen_addr);
+
+    // Convert address string to binary form using inet_pton (modern, safer alternative to inet_addr)
+    if (inet_pton(AF_INET, settings->listen_addr, &address.sin_addr) <= 0) {
+        print_error("Invalid listen address: %s!", settings->listen_addr);
+        close(s);
+        return -1;
+    }
+
     address.sin_port = htons(settings->port);
 
     // Bind to port
