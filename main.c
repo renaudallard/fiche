@@ -26,6 +26,8 @@ $ cat fiche.c | nc localhost 9999
 #include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <errno.h>
+#include <limits.h>
 
 
 int main(int argc, char **argv) {
@@ -57,7 +59,15 @@ int main(int argc, char **argv) {
             // port
             case 'p':
             {
-                fs.port = atoi(optarg);
+                char *endptr;
+                errno = 0;
+                long val = strtol(optarg, &endptr, 10);
+
+                if (errno != 0 || *endptr != '\0' || val < 1 || val > 65535) {
+                    fprintf(stderr, "Error: Invalid port number '%s' (must be 1-65535)\n", optarg);
+                    return 1;
+                }
+                fs.port = (uint16_t)val;
             }
             break;
 
@@ -71,7 +81,15 @@ int main(int argc, char **argv) {
             // slug size
             case 's':
             {
-                fs.slug_len = atoi(optarg);
+                char *endptr;
+                errno = 0;
+                long val = strtol(optarg, &endptr, 10);
+
+                if (errno != 0 || *endptr != '\0' || val < 1 || val > 255) {
+                    fprintf(stderr, "Error: Invalid slug length '%s' (must be 1-255)\n", optarg);
+                    return 1;
+                }
+                fs.slug_len = (uint8_t)val;
             }
             break;
 
@@ -92,7 +110,15 @@ int main(int argc, char **argv) {
             // buffer size
             case 'B':
             {
-                fs.buffer_len = atoi(optarg);
+                char *endptr;
+                errno = 0;
+                long val = strtol(optarg, &endptr, 10);
+
+                if (errno != 0 || *endptr != '\0' || val < 1 || val > INT_MAX) {
+                    fprintf(stderr, "Error: Invalid buffer size '%s' (must be 1-%d)\n", optarg, INT_MAX);
+                    return 1;
+                }
+                fs.buffer_len = (uint32_t)val;
             }
             break;
 
