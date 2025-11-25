@@ -560,13 +560,10 @@ static void *handle_connection(void *args) {
         print_status("Incoming connection from: %s (%s).", ip, hostname);
     }
 
-    // Create a buffer
-    uint8_t buffer[c->settings->buffer_len];
-    memset(buffer, 0, c->settings->buffer_len);
-
-    const int r = recv(c->socket, buffer, sizeof(buffer), MSG_WAITALL);
-    if (r <= 0) {
-        print_error("No data received from the client!");
+    // Create a buffer (heap allocated to avoid stack overflow)
+    uint8_t *buffer = malloc(c->settings->buffer_len);
+    if (!buffer) {
+        print_error("Couldn't allocate memory for buffer!");
         print_separator();
 
         // Close the socket
@@ -576,7 +573,24 @@ static void *handle_connection(void *args) {
         free(c);
         pthread_exit(NULL);
 
-        return 0;
+        return NULL;
+    }
+    memset(buffer, 0, c->settings->buffer_len);
+
+    const int r = recv(c->socket, buffer, c->settings->buffer_len, MSG_WAITALL);
+    if (r <= 0) {
+        print_error("No data received from the client!");
+        print_separator();
+
+        // Close the socket
+        close(c->socket);
+
+        // Cleanup
+        free(buffer);
+        free(c);
+        pthread_exit(NULL);
+
+        return NULL;
     }
 
     // - Check if request was performed with a known protocol
@@ -614,6 +628,7 @@ static void *handle_connection(void *args) {
             print_separator();
 
             // Cleanup
+            free(buffer);
             free(c);
             free(slug);
             close(c->socket);
@@ -633,6 +648,7 @@ static void *handle_connection(void *args) {
         close(c->socket);
 
         // Cleanup
+        free(buffer);
         free(c);
         pthread_exit(NULL);
         return NULL;
@@ -647,6 +663,7 @@ static void *handle_connection(void *args) {
         close(c->socket);
 
         // Cleanup
+        free(buffer);
         free(c);
         free(slug);
         pthread_exit(NULL);
@@ -676,6 +693,7 @@ static void *handle_connection(void *args) {
     close(c->socket);
 
     // Perform cleanup of values used in this thread
+    free(buffer);
     free(slug);
     free(c);
 
