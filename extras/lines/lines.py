@@ -9,6 +9,7 @@ from pygments.formatters import HtmlFormatter
 parser = argparse.ArgumentParser()
 parser.add_argument("root_dir", help="Path to directory with pastes")
 args = parser.parse_args()
+ROOT_DIR = os.path.realpath(args.root_dir)
 
 
 @app.route('/')
@@ -22,11 +23,15 @@ def beautify(slug):
     if len(slug) > 64:
         abort(404)
 
-    # Create path for the target dir
-    target_dir = os.path.join(args.root_dir, slug)
+    # Block traversal and embedded path separators early
+    if ".." in slug or os.path.sep in slug or (os.path.altsep and os.path.altsep in slug):
+        abort(404)
 
-    # Block directory traversal attempts
-    if not target_dir.startswith(args.root_dir):
+    # Create path for the target dir
+    target_dir = os.path.realpath(os.path.join(ROOT_DIR, slug))
+
+    # Block directory traversal attempts after normalization
+    if os.path.commonpath([ROOT_DIR, target_dir]) != ROOT_DIR:
         abort(404)
 
     # Check if directory with requested slug exists
