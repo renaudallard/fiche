@@ -183,6 +183,11 @@ static void get_date(char *buf);
  */
 unsigned int seed;
 
+/**
+ * @brief Mutex to protect seed access from multiple threads
+ */
+pthread_mutex_t seed_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /******************************************************************************
  * Public fiche functions
  */
@@ -728,10 +733,13 @@ static void generate_slug(char **output, uint8_t length, uint8_t extra_length) {
     }
 
     // Take n-th symbol from symbol table and use it for slug generation
+    // Lock mutex to ensure thread-safe slug generation and prevent collisions
+    pthread_mutex_lock(&seed_mutex);
     for (int i = 0; i < length + extra_length; i++) {
         int n = rand_r(&seed) % strlen(Fiche_Symbols);
         *(output[0] + sizeof(char) * i) = Fiche_Symbols[n];
     }
+    pthread_mutex_unlock(&seed_mutex);
 
 }
 
