@@ -404,11 +404,17 @@ static int perform_user_change(const Fiche_Settings *settings) {
     // Get user details
     const struct passwd *userdata = getpwnam(settings->user_name);
 
+    // Check if user exists
+    if (userdata == NULL) {
+        print_error("Could not find requested user: %s!", settings->user_name);
+        return -1;
+    }
+
     const int uid = userdata->pw_uid;
     const int gid = userdata->pw_gid;
 
     if (uid == -1 || gid == -1) {
-        print_error("Could find requested user: %s!", settings->user_name);
+        print_error("Invalid UID or GID for user: %s!", settings->user_name);
         return -1;
     }
 
